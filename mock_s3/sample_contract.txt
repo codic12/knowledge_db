@@ -1,0 +1,17 @@
+CONFIDENTIAL
+PayGlocal Enterprise Agreement - 2026
+
+1. Introduction
+This agreement outlines the usage of PayGlocal Enterprise Services by Acme Corp. 
+The agreement is effective from January 1, 2026.
+
+2. Pricing
+Acme Corp will be billed a flat rate of $150,000 annually for the Enterprise Document Intelligence layer.
+Overage costs will be calculated at $0.05 per processed document after the initial 1 million documents.
+
+3. SLA
+PayGlocal guarantees an uptime of 99.99%. 
+
+4. Points of Contact
+The primary point of contact for Acme Corp is Jane Doe (jane.doe@acmecorp.com).
+The primary point of contact for PayGlocal is John Smith (john.smith@payglocal.com).
