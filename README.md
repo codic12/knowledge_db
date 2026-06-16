@@ -17,9 +17,16 @@
    pip install -r requirements.txt
    ```
 
-4. **Set Environment Variable**:
+4. **Set Environment Variables**:
+   By default, the system uses the **Gemini API**.
    ```bash
-   export NVIDIA_API_KEY="your_api_key_here"
+   export GOOGLE_API_KEY="your_gemini_api_key_here"
+   ```
+   
+   To use **NVIDIA NIM**, set the provider and its key:
+   ```bash
+   export LLM_PROVIDER="nvidia"
+   export NVIDIA_API_KEY="your_nvidia_api_key_here"
    ```
 
 5. **Run the Application**:
@@ -36,8 +43,8 @@
 ## Features Implemented:
 - **Python + FastAPI**: Backend framework.
 - **Tesseract OCR**: Image and PDF processing with automatic deskewing.
-- **Nvidia NIM**: LLM inference using `meta/llama3-70b-instruct` for cost-efficient generation.
-- **Vector-based RAG**: Utilizes **LangChain** and **FAISS** with `all-MiniLM-L6-v2` local embeddings for semantic retrieval.
+- **Multi-API Support**: Support for **Gemini API** (default) and **Nvidia NIM** LLMs via an OpenAI-compatible interface.
+- **Vectorless RAG**: A reasoning-based retrieval system that uses LLM-generated page summaries for accurate context selection without needing a vector database.
 - **Mock S3**: Ingestion cascades through local directories simulating S3 paths.
 - **Beautiful HTML UI**: Clean, ChatGPT-inspired interface.
 - **Strict Citations**: System refuses to hallucinate and cites exact Document + Page.

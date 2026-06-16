@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 
 from ocr_engine import process_file
-from rag_engine import doc_index
+from vectorless_engine import vectorless_index
 from llm_client import generate_answer
 
 app = FastAPI(title="Document Intelligence API")
@@ -50,19 +50,8 @@ def perform_ingestion(folder_path: str, cascade: bool):
             
     print(f"Found {len(files_to_process)} files to process in {folder_path} (cascade={cascade})")
     
-    all_pages_data = []
     for file_path in files_to_process:
-        print(f"Processing {file_path}...")
-        pages = process_file(file_path)
-        for page in pages:
-            page['filepath'] = file_path
-            all_pages_data.append(page)
-            
-    if all_pages_data:
-        doc_index.add_documents(all_pages_data)
-        print(f"Successfully indexed {len(all_pages_data)} pages/segments.")
-    else:
-        print("No readable text found in the provided documents.")
+        vectorless_index.add_document(file_path)
 
 @app.post("/api/ingest")
 async def ingest_documents(req: IngestRequest, background_tasks: BackgroundTasks):
@@ -72,8 +61,8 @@ async def ingest_documents(req: IngestRequest, background_tasks: BackgroundTasks
     if not os.path.exists(req.s3_path) or not os.path.isdir(req.s3_path):
         raise HTTPException(status_code=400, detail=f"Path {req.s3_path} does not exist or is not a directory.")
         
-    perform_ingestion(req.s3_path, req.cascade)
-    return {"status": "success", "message": f"Ingestion completed for {req.s3_path}"}
+    background_tasks.add_task(perform_ingestion, req.s3_path, req.cascade)
+    return {"status": "success", "message": f"Ingestion started for {req.s3_path}."}
 
 @app.post("/api/ask")
 async def ask_question(req: AskRequest):
@@ -82,10 +71,10 @@ async def ask_question(req: AskRequest):
     """
     question = req.question
     
-    # Retrieve top relevant context
-    top_contexts = doc_index.search(question, top_n=5)
+    # Retrieve top relevant context (vectorless only)
+    top_contexts = vectorless_index.search(question, top_n=5)
     
-    # Generate answer
+    # Generate answer (using NVIDIA NIM via llm_client)
     answer = generate_answer(question, top_contexts)
     
     # Format citations with full paths for the UI to use

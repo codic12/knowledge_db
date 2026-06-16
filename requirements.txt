@@ -5,14 +5,6 @@ pytesseract
 pdf2image
 Pillow
 opencv-python-headless
-rank_bm25
 openai
 numpy
-scipy
-langchain
-langchain-community
-langchain-core
-langchain-classic
-faiss-cpu
-sentence-transformers
-langchain-huggingface
+pageindex

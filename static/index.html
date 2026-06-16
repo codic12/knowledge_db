@@ -87,6 +87,26 @@
             border-color: var(--accent);
         }
 
+        select {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
         .checkbox-label {
             font-size: 0.875rem;
             display: flex;
@@ -372,6 +392,16 @@
                     <span class="custom-checkbox"></span>
                     Include subfolders
                 </label>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-label">RAG Settings</div>
+            <div class="input-group">
+                <select id="rag-mode">
+                    <option value="hybrid">Standard Hybrid (Vector)</option>
+                    <option value="vectorless">Vectorless (PageIndex Tree)</option>
+                </select>
                 <button class="btn" id="ingest-btn" onclick="ingestDocs()">Ingest Documents</button>
                 <div id="status-bar"></div>
             </div>
@@ -404,28 +434,33 @@
     </div>
 
     <script>
+        function getMode() {
+            return document.getElementById('rag-mode').value;
+        }
+
         async function ingestDocs() {
             const path = document.getElementById('s3-path').value;
             const cascade = document.getElementById('cascade').checked;
+            const mode = getMode();
             const btn = document.getElementById('ingest-btn');
             const status = document.getElementById('status-bar');
 
             btn.disabled = true;
             status.style.display = 'block';
             status.className = '';
-            status.innerText = "Processing ingestion request...";
+            status.innerText = "Processing ingestion request (" + mode + ")...";
 
             try {
                 const res = await fetch('/api/ingest', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ s3_path: path, cascade: cascade })
+                    body: JSON.stringify({ s3_path: path, cascade: cascade, mode: mode })
                 });
                 const data = await res.json();
                 
                 if(res.ok) {
                     status.className = 'status-success';
-                    status.innerText = "Ingestion complete";
+                    status.innerText = "Ingestion started (" + mode + ")";
                 } else {
                     status.className = 'status-error';
                     status.innerText = data.detail || "Ingestion failed";
@@ -488,6 +523,7 @@
         async function askQuestion() {
             const input = document.getElementById('question-input');
             const question = input.value.trim();
+            const mode = getMode();
             if (!question) return;
 
             appendMessage('user', question);
@@ -495,14 +531,14 @@
 
             const typingIndicator = document.createElement('div');
             typingIndicator.className = 'message';
-            typingIndicator.innerHTML = '<div class="avatar ai">AI</div><div class="message-body"><div class="message-content" style="color: var(--text-secondary)">Analyzing source evidence...</div></div>';
+            typingIndicator.innerHTML = '<div class="avatar ai">AI</div><div class="message-body"><div class="message-content" style="color: var(--text-secondary)">Analyzing source evidence (' + mode + ')...</div></div>';
             document.getElementById('messages-wrapper').appendChild(typingIndicator);
 
             try {
                 const res = await fetch('/api/ask', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: question })
+                    body: JSON.stringify({ question: question, mode: mode })
                 });
                 const data = await res.json();
                 
