@@ -2,3 +2,6 @@ __pycache__
 .mypy_cache
 .env
 venv
+mock_s3/
+data/
+

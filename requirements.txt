@@ -8,3 +8,5 @@ opencv-python-headless
 openai
 numpy
 pageindex
+google-genai
+sentence-transformers
