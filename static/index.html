@@ -45,6 +45,7 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
+            position: relative;
         }
 
         /* Left Chat History Sidebar */
@@ -57,6 +58,23 @@
             padding: 20px;
             z-index: 10;
             flex-shrink: 0;
+            position: relative;
+        }
+
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            cursor: col-resize;
+            background-color: transparent;
+            transition: background-color 0.15s ease;
+            z-index: 20;
+        }
+
+        .resize-handle:hover, .resize-handle.active {
+            background-color: var(--accent);
         }
 
         .brand-container {
@@ -100,6 +118,7 @@
             width: 100%;
             margin-bottom: 20px;
             transition: background-color 0.15s ease;
+            flex-shrink: 0;
         }
 
         .new-chat-btn:hover {
@@ -113,6 +132,7 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 10px;
+            flex-shrink: 0;
         }
 
         .history-list {
@@ -180,6 +200,19 @@
             background-color: rgba(239, 68, 68, 0.1);
         }
 
+        /* Responsive Mobile Sidebar Backdrop overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+            z-index: 8;
+        }
+
         /* Main Content Panel */
         .main-content {
             flex: 1;
@@ -187,6 +220,7 @@
             flex-direction: column;
             position: relative;
             height: 100vh;
+            overflow: hidden;
         }
 
         /* Top Header Ingestion Toolbar */
@@ -200,20 +234,56 @@
             background-color: var(--bg-sidebar);
             z-index: 5;
             flex-shrink: 0;
+            position: relative;
         }
 
-        .header-left {
+        .menu-toggle-btn {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+        }
+
+        .header-title {
+            display: none;
+            font-size: 0.925rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        .config-toggle-btn {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+        }
+
+        .ingest-toolbar {
             display: flex;
             align-items: center;
-            gap: 16px;
-            flex: 1;
+            justify-content: space-between;
+            width: 100%;
         }
 
-        .header-right {
+        .ingest-group {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-left: 16px;
+        }
+
+        .ingest-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
         .path-label {
@@ -313,7 +383,7 @@
 
         /* Ingestion Status Panel */
         .inline-status {
-            display: flex;
+            display: none; /* Hidden by default - no "ready" label at startup */
             align-items: center;
             gap: 8px;
             font-size: 0.8rem;
@@ -524,6 +594,31 @@
             font-weight: 600;
         }
 
+        .inline-citation-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background-color: rgba(37, 99, 235, 0.12);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            color: #60a5fa;
+            padding: 1px 6px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.15s ease-in-out;
+            vertical-align: middle;
+            margin: 0 2px;
+        }
+
+        .inline-citation-link:hover {
+            background-color: rgba(37, 99, 235, 0.22);
+            border-color: #3b82f6;
+            color: #93c5fd;
+            text-decoration: none;
+            transform: translateY(-0.5px);
+        }
+
         /* Input Container Bottom */
         .chat-input-area {
             position: absolute;
@@ -652,12 +747,103 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.15);
         }
+
+        /* ========================================================
+           Mobile Responsive Styles (max-width: 768px)
+           ======================================================== */
+        @media (max-width: 768px) {
+            /* Sidebar transitions offscreen */
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 260px !important; /* Fixed width on mobile */
+                transform: translateX(-100%);
+                transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                z-index: 100;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .sidebar-overlay.open {
+                display: block;
+            }
+            .resize-handle {
+                display: none !important; /* Hide resize handle on mobile */
+            }
+
+            /* Responsive Ingest Header Panel */
+            .menu-toggle-btn {
+                display: flex;
+            }
+            .header-title {
+                display: block;
+            }
+            .config-toggle-btn {
+                display: flex;
+            }
+
+            /* Ingest toolbar turns into collapsible drawer */
+            .ingest-toolbar {
+                display: none;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+                position: absolute;
+                top: 64px;
+                left: 0;
+                right: 0;
+                background-color: var(--bg-sidebar);
+                border-bottom: 1px solid var(--border);
+                padding: 16px 24px;
+                z-index: 4;
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            }
+            .ingest-toolbar.open {
+                display: flex;
+            }
+            .ingest-group {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 6px;
+            }
+            .chat-header input[type="text"] {
+                width: 100% !important;
+            }
+            .ingest-actions {
+                justify-content: space-between;
+            }
+            .inline-status {
+                max-width: 100%;
+                justify-content: center;
+            }
+
+            /* Compact Padding for Chat on Mobile */
+            .chat-container {
+                padding: 16px 16px 100px 16px;
+            }
+            .chat-scroller-inner {
+                gap: 20px;
+            }
+            .chat-input-area {
+                padding: 12px 16px 20px 16px;
+            }
+            .chat-header {
+                padding: 0 16px;
+            }
+        }
     </style>
 </head>
 <body>
 
+    <!-- Responsive Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
     <!-- Left Sidebar (Chat History) -->
     <div class="sidebar">
+        <div class="resize-handle" id="resize-handle"></div>
+
         <div class="brand-container">
             <div class="brand-icon">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -686,27 +872,44 @@
     <div class="main-content">
         <!-- Top Toolbar -->
         <div class="chat-header">
-            <div class="header-left">
-                <span class="path-label">Ingest Path:</span>
-                <input type="text" id="s3-path" placeholder="Corpus path..." value="mock_s3/">
+            <!-- Hamburger menu (Mobile Only) -->
+            <button class="menu-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle Menu">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+
+            <!-- Flat Mobile Header Title (Mobile Only) -->
+            <div class="header-title">Document Intelligence</div>
+
+            <!-- Ingestion elements (Inline desktop, drawer overlay on mobile) -->
+            <div class="ingest-toolbar" id="ingest-toolbar">
+                <div class="ingest-group">
+                    <span class="path-label">Ingest Path:</span>
+                    <input type="text" id="s3-path" placeholder="Corpus path..." value="mock_s3/">
+                </div>
                 
-                <label class="switch-container">
-                    <span>Subfolders</span>
-                    <input type="checkbox" id="cascade" checked>
-                    <span class="switch-slider"></span>
-                </label>
+                <div class="ingest-actions">
+                    <label class="switch-container">
+                        <span>Subfolders</span>
+                        <input type="checkbox" id="cascade" checked>
+                        <span class="switch-slider"></span>
+                    </label>
+                    
+                    <button class="btn-ingest" id="ingest-btn" onclick="ingestDocs()">
+                        <svg id="ingest-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        <span id="ingest-btn-text">Ingest</span>
+                    </button>
+                </div>
                 
-                <button class="btn-ingest" id="ingest-btn" onclick="ingestDocs()">
-                    <svg id="ingest-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                    <span id="ingest-btn-text">Ingest</span>
-                </button>
-            </div>
-            <div class="header-right">
                 <div class="inline-status" id="status-panel">
                     <span class="status-pulse-dot"></span>
                     <span id="status-desc-text">Ready</span>
                 </div>
             </div>
+
+            <!-- Ingestion Toggle Button (Mobile Only) -->
+            <button class="config-toggle-btn" onclick="toggleConfigDrawer()" aria-label="Ingestion Options">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+            </button>
         </div>
 
         <!-- Chat Container -->
@@ -734,38 +937,70 @@
 
     <script>
         // State for managing chat sessions efficiently in LocalStorage
-        // Split-key storage design:
-        // 1. doc_intel_chat_index -> holds metadata summary array: [{ id, title, updatedAt }]
-        // 2. doc_intel_chat_msg_{id} -> holds messages array for that specific session.
         let currentChatId = null;
         let chatIndex = [];
 
-        function initChats() {
+        async function initChats() {
             try {
-                const storedIndex = localStorage.getItem('doc_intel_chat_index');
-                if (storedIndex) {
-                    chatIndex = JSON.parse(storedIndex);
+                const res = await fetch('/api/chats');
+                if (res.ok) {
+                    chatIndex = await res.json();
+                    saveIndexToStorage();
                 } else {
-                    chatIndex = [];
+                    throw new Error("Server error");
                 }
             } catch (e) {
-                chatIndex = [];
+                console.warn("Could not fetch chats from server, falling back to localStorage", e);
+                try {
+                    const storedIndex = localStorage.getItem('doc_intel_chat_index');
+                    chatIndex = storedIndex ? JSON.parse(storedIndex) : [];
+                } catch (err) {
+                    chatIndex = [];
+                }
             }
             
             if (chatIndex.length === 0) {
-                startNewChat();
+                await startNewChat();
             } else {
-                // Load the most recently active chat (first element in index)
-                loadChat(chatIndex[0].id);
+                await loadChat(chatIndex[0].id);
             }
             renderChatHistory();
+            makeSidebarResizable();
         }
 
         function saveIndexToStorage() {
             localStorage.setItem('doc_intel_chat_index', JSON.stringify(chatIndex));
         }
 
-        function startNewChat() {
+        async function persistChatToServer(chatId) {
+            const chatMeta = chatIndex.find(c => c.id === chatId);
+            if (!chatMeta) return;
+            
+            let messages = [];
+            try {
+                const storedMsgs = localStorage.getItem(`doc_intel_chat_msg_${chatId}`);
+                if (storedMsgs) {
+                    messages = JSON.parse(storedMsgs);
+                }
+            } catch (e) {}
+            
+            try {
+                await fetch('/api/chats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: chatMeta.id,
+                        title: chatMeta.title,
+                        updatedAt: chatMeta.updatedAt,
+                        messages: messages
+                    })
+                });
+            } catch (e) {
+                console.error("Failed to persist chat to server", e);
+            }
+        }
+
+        async function startNewChat() {
             const newId = Date.now().toString();
             const newChatMeta = {
                 id: newId,
@@ -773,18 +1008,18 @@
                 updatedAt: Date.now()
             };
             
-            // Add to the front of index
             chatIndex.unshift(newChatMeta);
             saveIndexToStorage();
             
-            // Set empty messages in its own storage key
             localStorage.setItem(`doc_intel_chat_msg_${newId}`, JSON.stringify([]));
             
-            loadChat(newId);
+            await persistChatToServer(newId);
+            
+            await loadChat(newId);
             renderChatHistory();
         }
 
-        function loadChat(id) {
+        async function loadChat(id) {
             currentChatId = id;
             
             let messages = [];
@@ -793,8 +1028,18 @@
                 if (storedMsgs) {
                     messages = JSON.parse(storedMsgs);
                 }
-            } catch (e) {
-                messages = [];
+            } catch (e) {}
+            
+            if (messages.length === 0) {
+                try {
+                    const res = await fetch(`/api/chats/${id}`);
+                    if (res.ok) {
+                        messages = await res.json();
+                        localStorage.setItem(`doc_intel_chat_msg_${id}`, JSON.stringify(messages));
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch chat messages from server", e);
+                }
             }
             
             const wrapper = document.getElementById('messages-wrapper');
@@ -808,23 +1053,34 @@
                 });
             }
             renderChatHistory();
+
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('open');
+            }
         }
 
-        function deleteChat(id, event) {
+        async function deleteChat(id, event) {
             if (event) event.stopPropagation();
             
-            // Remove messages key
             localStorage.removeItem(`doc_intel_chat_msg_${id}`);
             
-            // Remove from index
             chatIndex = chatIndex.filter(c => c.id !== id);
             saveIndexToStorage();
             
+            try {
+                await fetch(`/api/chats/${id}`, { method: 'DELETE' });
+            } catch (e) {
+                console.error("Failed to delete chat from server", e);
+            }
+            
             if (currentChatId === id) {
                 if (chatIndex.length > 0) {
-                    loadChat(chatIndex[0].id);
+                    await loadChat(chatIndex[0].id);
                 } else {
-                    startNewChat();
+                    await startNewChat();
                 }
             } else {
                 renderChatHistory();
@@ -835,7 +1091,6 @@
             const list = document.getElementById('chat-history-list');
             list.innerHTML = '';
             
-            // Index is kept sorted by updatedAt descending
             chatIndex.forEach(chat => {
                 const item = document.createElement('div');
                 item.className = `history-item ${chat.id === currentChatId ? 'active' : ''}`;
@@ -882,12 +1137,10 @@
             wrapper.appendChild(msgDiv);
         }
 
-        // Helper to formatting Markdown response
         function renderMarkdown(text) {
             if (window.marked && typeof window.marked.parse === 'function') {
                 return window.marked.parse(text);
             }
-            // Fallback safe formatting if Marked library is blocked/unreachable
             return text
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
@@ -919,6 +1172,7 @@
             btnText.innerText = "Ingesting...";
             icon.outerHTML = '<span class="btn-loader" id="ingest-icon"></span>';
 
+            statusPanel.style.display = 'flex';
             statusPanel.className = 'inline-status processing';
             statusDescText.innerText = `Ingesting...`;
 
@@ -967,46 +1221,58 @@
             username.className = 'message-username';
             username.innerText = role === 'user' ? 'User' : 'System';
 
+            if (role !== 'user' && citations && citations.length > 0) {
+                const bracketRegex = /\[([^\]]+)\]/g;
+                htmlText = htmlText.replace(bracketRegex, (match, bracketContent) => {
+                    if (bracketContent.includes('<a') || bracketContent.includes('href')) {
+                        return match;
+                    }
+                    if (!/page|pg/i.test(bracketContent)) {
+                        return match;
+                    }
+                    
+                    const parts = bracketContent.split(';');
+                    const renderedParts = parts.map(part => {
+                        const trimmed = part.trim();
+                        let docName = '';
+                        let pagePart = '';
+                        const commaIdx = trimmed.indexOf(',');
+                        if (commaIdx !== -1) {
+                            docName = trimmed.substring(0, commaIdx).trim();
+                            pagePart = trimmed.substring(commaIdx + 1).trim();
+                        } else {
+                            const pageMatch = trimmed.match(/(page|pg)\s*\d+/i);
+                            if (pageMatch) {
+                                const idx = pageMatch.index;
+                                docName = trimmed.substring(0, idx).trim();
+                                pagePart = trimmed.substring(idx).trim();
+                            }
+                        }
+                        
+                        if (docName && pagePart) {
+                            const pageNumMatch = pagePart.match(/\d+/);
+                            if (pageNumMatch) {
+                                const pageNum = parseInt(pageNumMatch[0]);
+                                const c = citations.find(item => item.document.toLowerCase() === docName.toLowerCase());
+                                if (c) {
+                                    const pageSuffix = c.filepath.toLowerCase().endsWith('.pdf') ? `#page=${pageNum}` : '';
+                                    const href = `/api/files/${encodeURIComponent(c.filepath)}${pageSuffix}`;
+                                    return `<a href="${href}" target="_blank" class="inline-citation-link"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg><span>${docName}, ${pagePart}</span></a>`;
+                                }
+                            }
+                        }
+                        return trimmed;
+                    });
+                    return renderedParts.join('; ');
+                });
+            }
+
             const content = document.createElement('div');
             content.className = 'message-content';
             content.innerHTML = htmlText;
 
             body.appendChild(username);
             body.appendChild(content);
-
-            if (citations && citations.length > 0) {
-                const header = document.createElement('div');
-                header.className = 'citations-section-header';
-                header.innerText = "Source Citations";
-                body.appendChild(header);
-
-                const citationsGrid = document.createElement('div');
-                citationsGrid.className = 'citations-grid';
-                
-                const seen = new Set();
-                citations.forEach(c => {
-                    const key = `${c.filepath}_${c.page}`;
-                    if (seen.has(key)) return;
-                    seen.add(key);
-
-                    const tag = document.createElement('a');
-                    tag.className = 'citation-chip';
-                    const pageSuffix = c.filepath.toLowerCase().endsWith('.pdf') ? `#page=${c.page}` : '';
-                    tag.href = `/api/files/${encodeURIComponent(c.filepath)}${pageSuffix}`;
-                    tag.target = '_blank';
-                    
-                    tag.innerHTML = `
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                        </svg>
-                        <span>${c.document}</span>
-                        <span class="citation-page-badge">Pg ${c.page}</span>
-                    `;
-                    citationsGrid.appendChild(tag);
-                });
-                body.appendChild(citationsGrid);
-            }
 
             msgDiv.appendChild(body);
             wrapper.appendChild(msgDiv);
@@ -1015,10 +1281,9 @@
             container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
         }
 
-        function appendMessage(role, htmlText, rawText, citations = null) {
+        async function appendMessage(role, htmlText, rawText, citations = null) {
             appendMessageMarkup(role, htmlText, citations);
             
-            // 1. Fetch current chat's messages from its unique key
             let messages = [];
             try {
                 const storedMsgs = localStorage.getItem(`doc_intel_chat_msg_${currentChatId}`);
@@ -1029,24 +1294,22 @@
                 messages = [];
             }
             
-            // 2. Append new message to array and save back
             messages.push({ role, text: htmlText, citations });
             localStorage.setItem(`doc_intel_chat_msg_${currentChatId}`, JSON.stringify(messages));
             
-            // 3. Update the chat metadata item in index
             const chatMeta = chatIndex.find(c => c.id === currentChatId);
             if (chatMeta) {
                 chatMeta.updatedAt = Date.now();
                 
-                // If it is the first user query, name the chat after it
                 if (role === 'user' && chatMeta.title === 'New Chat') {
                     chatMeta.title = rawText.length > 25 ? rawText.substring(0, 25) + '...' : rawText;
                 }
                 
-                // 4. Sort the index so that the active chat bubbles to the top
                 chatIndex.sort((a, b) => b.updatedAt - a.updatedAt);
                 saveIndexToStorage();
                 renderChatHistory();
+                
+                await persistChatToServer(currentChatId);
             }
         }
 
@@ -1055,7 +1318,7 @@
             const question = input.value.trim();
             if (!question) return;
 
-            appendMessage('user', renderMarkdown(question), question);
+            await appendMessage('user', renderMarkdown(question), question);
             input.value = '';
 
             const typingIndicator = document.createElement('div');
@@ -1090,16 +1353,16 @@
                 }
                 
                 if (res.ok) {
-                    appendMessage('ai', renderMarkdown(data.answer), data.answer, data.citations);
+                    await appendMessage('ai', renderMarkdown(data.answer), data.answer, data.citations);
                 } else {
-                    appendMessage('ai', `<span style="color: var(--error)">Error during query processing: ${data.detail || "Unknown internal error"}</span>`, "Error");
+                    await appendMessage('ai', `<span style="color: var(--error)">Error during query processing: ${data.detail || "Unknown internal error"}</span>`, "Error");
                 }
             } catch(e) {
                 const indicator = document.getElementById('typing-indicator-wrapper');
                 if (indicator) {
                     indicator.remove();
                 }
-                appendMessage('ai', '<span style="color: var(--error)">Failed to contact query service.</span>', "Failed");
+                await appendMessage('ai', '<span style="color: var(--error)">Failed to contact query service.</span>', "Failed");
             }
         }
 
@@ -1107,6 +1370,58 @@
             if (e.key === 'Enter') {
                 askQuestion();
             }
+        }
+
+        // --- Drag/Resize Left Sidebar Functionality (Desktop) ---
+        function makeSidebarResizable() {
+            const sidebar = document.querySelector('.sidebar');
+            const handle = document.getElementById('resize-handle');
+            
+            let isResizing = false;
+            
+            handle.addEventListener('mousedown', function(e) {
+                isResizing = true;
+                document.body.style.userSelect = 'none';
+                document.body.style.cursor = 'col-resize';
+                handle.classList.add('active');
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isResizing) return;
+                
+                let newWidth = e.clientX;
+                
+                // Enforce range bounds for sidebar width
+                if (newWidth < 180) newWidth = 180;
+                if (newWidth > 450) newWidth = 450;
+                
+                sidebar.style.width = newWidth + 'px';
+                document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
+            });
+            
+            document.addEventListener('mouseup', function(e) {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.userSelect = '';
+                    document.body.style.cursor = '';
+                    handle.classList.remove('active');
+                }
+            });
+        }
+
+        // --- Toggle Sidebar Menu (Mobile) ---
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        // --- Toggle Ingest Options Panel Drawer (Mobile) ---
+        function toggleConfigDrawer() {
+            const toolbar = document.getElementById('ingest-toolbar');
+            toolbar.classList.toggle('open');
         }
 
         // Initialize chats list on page load

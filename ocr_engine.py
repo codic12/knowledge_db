@@ -5,23 +5,18 @@ from PIL import Image
 import pytesseract
 from pdf2image import convert_from_path
 import re
+import csv
+import io
 
 def preprocess_image(image_pil):
-    """
-    Convert PIL image to OpenCV format, grayscale, threshold, and deskew.
-    """
-    # Convert PIL to OpenCV format
     open_cv_image = np.array(image_pil)
-    # Convert RGB to BGR
     if len(open_cv_image.shape) == 3 and open_cv_image.shape[2] == 3:
         img = open_cv_image[:, :, ::-1].copy()
     else:
         img = open_cv_image.copy()
 
-    # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img
 
-    # Simple deskew
     coords = np.column_stack(np.where(gray > 0))
     if len(coords) > 0:
         angle = cv2.minAreaRect(coords)[-1]
@@ -32,25 +27,128 @@ def preprocess_image(image_pil):
         
         if abs(angle) > 0.5 and abs(angle) < 45:
             (h, w) = gray.shape[:2]
-            center = (w // 2, h // 2)
+            center = (w//2, h//2)
             M = cv2.getRotationMatrix2D(center, angle, 1.0)
             gray = cv2.warpAffine(gray, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
 
     return Image.fromarray(gray)
 
+def parse_csv_to_structured_text(csv_text):
+    f = io.StringIO(csv_text.strip())
+    reader = csv.reader(f)
+    try:
+        rows = list(reader)
+    except Exception as e:
+        print(f"CSV Parsing Error: {e}")
+        return csv_text
+        
+    if not rows:
+        return ""
+        
+    headers = [h.strip() for h in rows[0]]
+    structured_lines = []
+    for r_idx, row in enumerate(rows[1:]):
+        row_parts = []
+        for c_idx, val in enumerate(row):
+            header = headers[c_idx] if c_idx < len(headers) else f"Col{c_idx+1}"
+            row_parts.append(f"{header}: {val.strip()}")
+        structured_lines.append(f"[Table Row] " + " | ".join(row_parts))
+    return "\n".join(structured_lines)
+
+def parse_text_tables(text):
+    """
+    Detects plain-text/OCR tables and formats them row-by-row, prepending column headers to prevent context loss.
+    """
+    if not text:
+        return ""
+        
+    lines = text.splitlines()
+    processed_lines = []
+    in_table = False
+    table_lines = []
+    
+    def flush_table(t_lines):
+        if not t_lines:
+            return []
+            
+        parsed_rows = []
+        for line in t_lines:
+            stripped = line.strip()
+            # Split by '|' if present, else '\t', else 3 or more spaces
+            if '|' in stripped:
+                parts = [p.strip() for p in stripped.split('|') if p.strip()]
+            elif '\t' in stripped:
+                parts = [p.strip() for p in stripped.split('\t') if p.strip()]
+            else:
+                parts = [p.strip() for p in re.split(r'\s{3,}', stripped) if p.strip()]
+            if parts:
+                parsed_rows.append(parts)
+        
+        if not parsed_rows or len(parsed_rows) < 2:
+            return t_lines
+            
+        col_counts = [len(r) for r in parsed_rows]
+        # Check column count consistency: must be >= 2 and most common column count is at least 60% frequency
+        from collections import Counter
+        most_common_col_count, count_freq = Counter(col_counts).most_common(1)[0]
+        
+        if most_common_col_count < 2 or (count_freq / len(parsed_rows)) < 0.6:
+            return t_lines
+            
+        headers = parsed_rows[0]
+        formatted_lines = []
+        
+        # Keep the header representation
+        formatted_lines.append(f"[Table Header] " + " | ".join(headers))
+        
+        for r_idx, row in enumerate(parsed_rows[1:]):
+            row_str_parts = []
+            for c_idx in range(max(len(headers), len(row))):
+                header = headers[c_idx] if c_idx < len(headers) else f"Col{c_idx+1}"
+                val = row[c_idx] if c_idx < len(row) else ""
+                row_str_parts.append(f"{header}: {val}")
+            formatted_lines.append(f"[Table Row] " + " | ".join(row_str_parts))
+        return formatted_lines
+
+    for line in lines:
+        stripped = line.strip()
+        is_table_line = False
+        if '|' in stripped:
+            is_table_line = True
+        elif '\t' in stripped:
+            is_table_line = True
+        else:
+            parts = [p.strip() for p in re.split(r'\s{3,}', stripped) if p.strip()]
+            if len(parts) >= 2:
+                is_table_line = True
+        
+        if is_table_line:
+            if not in_table:
+                in_table = True
+            table_lines.append(line)
+        else:
+            if in_table:
+                processed_lines.extend(flush_table(table_lines))
+                table_lines = []
+                in_table = False
+            processed_lines.append(line)
+            
+    if in_table:
+        processed_lines.extend(flush_table(table_lines))
+        
+    return "\n".join(processed_lines)
+
 def clean_ocr_text(text):
     """
     Advanced cleaning to preserve structural context.
     Propagates parent section numbers to sub-items.
-    Example: 
-    6. Insurance
-       A. Liability
-    becomes:
-    6. Insurance
-    [Section 6] A. Liability
+    Also formats embedded tables so headers match individual row cells.
     """
     if not text:
         return ""
+        
+    # Detect and structure plain text tables first
+    text = parse_text_tables(text)
         
     lines = text.splitlines()
     cleaned_lines = []
@@ -59,6 +157,11 @@ def clean_ocr_text(text):
     for line in lines:
         original_line = line.strip()
         if not original_line:
+            continue
+            
+        # If it is an optimized table row, bypass section prefixing
+        if original_line.startswith("[Table Row]") or original_line.startswith("[Table Header]"):
+            cleaned_lines.append(original_line)
             continue
             
         # Detect primary section (e.g., "6.", "Section 6", "6.0")
@@ -133,7 +236,11 @@ def process_file(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
                 text = f.read()
                 if text.strip():
-                    pages_data.append({'page': 1, 'text': text.strip()})
+                    if ext == '.csv':
+                        text = parse_csv_to_structured_text(text)
+                    else:
+                        text = clean_ocr_text(text)
+                    pages_data.append({'page': 1, 'text': text})
         except Exception as e:
             print(f"Error processing text file {file_path}: {e}")
 

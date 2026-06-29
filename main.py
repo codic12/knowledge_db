@@ -90,3 +90,27 @@ async def ask_question(req: AskRequest):
         "answer": answer,
         "citations": citations
     }
+
+class ChatSaveRequest(BaseModel):
+    id: str
+    title: str
+    updatedAt: float
+    messages: list
+
+@app.get("/api/chats")
+async def get_chats():
+    return vectorless_index.get_all_chats()
+
+@app.get("/api/chats/{chat_id}")
+async def get_chat_messages(chat_id: str):
+    return vectorless_index.get_chat_messages(chat_id)
+
+@app.post("/api/chats")
+async def save_chat_session(req: ChatSaveRequest):
+    vectorless_index.save_chat(req.id, req.title, req.updatedAt, req.messages)
+    return {"status": "success"}
+
+@app.delete("/api/chats/{chat_id}")
+async def delete_chat_session(chat_id: str):
+    vectorless_index.delete_chat(chat_id)
+    return {"status": "success"}
